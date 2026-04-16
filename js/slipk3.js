@@ -1,6 +1,5 @@
 function loadFonts() {
     const fonts = [
-
         new FontFace('SukhumvitSetThin', 'url(assets/fonts/SukhumvitSet-Thin.woff)'),
         new FontFace('SukhumvitSetText', 'url(assets/fonts/SukhumvitSet-Text.woff)'),
         new FontFace('SukhumvitSetLight', 'url(assets/fonts/SukhumvitSet-Light.woff)'),
@@ -8,7 +7,6 @@ function loadFonts() {
         new FontFace('SukhumvitSetSemiBold', 'url(assets/fonts/SukhumvitSet-SemiBold.woff)'),
         new FontFace('SukhumvitSetBold', 'url(assets/fonts/SukhumvitSet-Bold.woff)'),
         new FontFace('SukhumvitSetExtraBold', 'url(assets/fonts/SukhumvitSet-Extra%20Bold.woff)'),
-
         new FontFace('SFThonburiLight', 'url(assets/fonts/SFThonburi.woff)'),
         new FontFace('SFThonburiRegular', 'url(assets/fonts/SFThonburi-Regular.woff)'),
         new FontFace('SFThonburiSemiBold', 'url(assets/fonts/SFThonburi-Semibold.woff)'),
@@ -21,6 +19,7 @@ function loadFonts() {
         });
     });
 }
+
 window.onload = function() {
     setCurrentDateTime();
     loadFonts().then(function() {
@@ -30,23 +29,22 @@ window.onload = function() {
     }).catch(function() {
         updateDisplay();
     });
+    document.addEventListener('paste', handlePaste);
 };
-
 
 function setCurrentDateTime() {
     const now = new Date();
     const localDateTime = now.toLocaleString('sv-SE', { timeZone: 'Asia/Bangkok', hour12: false });
     
-    const formattedDateTime = localDateTime.substring(0, 16); // ตัดส่วนวินาทีออก
+    const formattedDateTime = localDateTime.substring(0, 16);
     document.getElementById('datetime').value = formattedDateTime;
     
-    const oneMinuteLater = new Date(now.getTime() + 60000); // เพิ่ม 1 นาที (60,000 มิลลิวินาที)
+    const oneMinuteLater = new Date(now.getTime() + 60000);
     const hours = oneMinuteLater.getHours().toString().padStart(2, '0');
     const minutes = oneMinuteLater.getMinutes().toString().padStart(2, '0');
     const formattedTimePlusOne = `${hours}:${minutes}`;
     document.getElementById('datetime_plus_one').value = formattedTimePlusOne;
 }
-
 
 function padZero(number) {
     return number < 10 ? '0' + number : number;
@@ -56,25 +54,28 @@ function formatDateWithDay(date) {
     const days = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
     const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
     
-    const dayName = days[new Date(date).getDay()];
-    const day = new Date(date).getDate();
-    const month = months[new Date(date).getMonth()];
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    
+    const dayName = days[d.getDay()];
+    const day = d.getDate();
+    const month = months[d.getMonth()];
 
     return `${dayName}ที่ ${day} ${month}`;
 }
 
-
 function formatDate(date) {
-    const day = padZero(new Date(date).getDate());
-    const month = padZero(new Date(date).getMonth() + 1);
-    const year = ((new Date(date).getFullYear()) + 543).toString().substr(-2);
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    
+    const day = padZero(d.getDate());
+    const month = padZero(d.getMonth() + 1);
+    const year = (d.getFullYear() + 543).toString().substr(-2);
     return `${day}/${month}/${year}`;
 }
 
-
 let qrCodeImage = null;
 let powerSavingMode = false;
-
 
 function handlePaste(event) {
     const items = event.clipboardData.items;
@@ -95,73 +96,78 @@ function handlePaste(event) {
     }
 }
 
-function updateDisplay() {
-    const datetime = document.getElementById('datetime').value || '-';
-    const batteryLevel = document.getElementById('battery').value || '100';
-    const datetimePlusOne = document.getElementById('datetime_plus_one').value || '-';
-    const money02 = document.getElementById('money02').value || '-';
+window.updateDisplay = async function() {
+    const backgroundSelect = document.getElementById('backgroundSelect')?.value || 'assets/image/bs/backgroundEnter-KB2.1.jpg';
+    const datetime = document.getElementById('datetime')?.value || '-';
+    const batteryLevel = document.getElementById('battery')?.value || '100';
+    const datetimePlusOne = document.getElementById('datetime_plus_one')?.value || '-';
+    const money02 = document.getElementById('money02')?.value || '-';
+    const senderaccount1 = document.getElementById('senderaccount1')?.value || '-';
 
-    const formattedDate = formatDate(datetime.substring(0, 10)); 
-    const formattedDateWithDay = formatDateWithDay(datetime.substring(0, 10)); 
-    const formattedTime = datetime.substring(11, 16); 
+    let datePart = new Date().toISOString().substring(0, 10);
+    let timePart = '-';
+    if (datetime !== '-') {
+        datePart = datetime.substring(0, 10);
+        timePart = datetime.substring(11, 16);
+    }
+
+    const formattedDate = formatDate(datePart); 
+    const formattedDateWithDay = formatDateWithDay(datePart); 
+    const formattedTime = timePart; 
     const formattedTimePlusOne = datetimePlusOne; 
 
-    let timeDifference = Math.floor((new Date(`1970-01-01T${datetimePlusOne}:00Z`) - new Date(`1970-01-01T${formattedTime}:00Z`)) / 60000);
-    let timeMessage = "";
-    
-    if (timeDifference > 1) {
-        timeMessage = `${timeDifference} นาทีที่แล้ว`;
-    } else if (timeDifference === 1) {
-        timeMessage = "1 นาทีที่แล้ว";
-    } else {
-        timeMessage = "ตอนนี้";
+    let timeMessage = "ตอนนี้";
+    if (formattedTime !== '-' && formattedTimePlusOne !== '-') {
+        let timeDifference = Math.floor((new Date(`1970-01-01T${formattedTimePlusOne}:00`) - new Date(`1970-01-01T${formattedTime}:00`)) / 60000);
+        if (timeDifference > 1) {
+            timeMessage = `${timeDifference} นาทีที่แล้ว`;
+        } else if (timeDifference === 1) {
+            timeMessage = "1 นาทีที่แล้ว";
+        }
     }
-    
-
-
-    
-    const senderaccount1 = document.getElementById('senderaccount1').value || '-';
-    
-
-    
-  
 
     const canvas = document.getElementById('canvas');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    const backgroundImage = new Image();
-    backgroundImage.src = '../assets/image/bs/backgroundEnter-K3.jpg';
-    backgroundImage.onload = function() {
+    const loadImage = (src) => new Promise(res => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = () => res(null);
+        img.src = src;
+    });
+
+    const bgImg = await loadImage(backgroundSelect);
+    
+    if (bgImg) {
+        canvas.width = bgImg.width;
+        canvas.height = bgImg.height;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+    } else {
+        canvas.width = 591;
+        canvas.height = 1280;
+        ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
-        ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+    drawText(ctx, `${formattedTimePlusOne} น.`, 110,33,20, 'SFThonburiRegular', '#e5efee','right', 1.5, 3, 0, 0, 800, -0.25);
+    drawText(ctx, `บัญชีของฉัน`, 39,195,30, 'SukhumvitSetMedium', '#e5efee','left', 1.5, 3, 0, 0, 800,);
+    drawText(ctx, `${senderaccount1}`, 39,235,24, 'SukhumvitSetMedium', '#e5efee','left', 1.5, 3, 0, 0, 800, 0.25);
+    drawText(ctx, `ข้อมูล ณ เวลา ${formattedTime} น.`, 221, 609,19.30, 'SukhumvitSetMedium', '#c2cacd','left', 1.5, 3, 0, 0, 800, 0.25);
+    drawText(ctx, `${money02}`, 295.5, 440,42, 'SukhumvitSetMedium', '#ffffff', 'center', 40, 3, 0, 0, 430,-0.25);
 
-
-
-        drawText(ctx, `${formattedTimePlusOne} น.`, 110,33,20, 'SFThonburiRegular', '#e5efee','right', 1.5, 3, 0, 0, 800, -0.25);
-        drawText(ctx, `บัญชีของฉัน`, 39,195,30, 'SukhumvitSetMedium', '#e5efee','left', 1.5, 3, 0, 0, 800,);
-        drawText(ctx, `${senderaccount1}`, 39,235,24, 'SukhumvitSetMedium', '#e5efee','left', 1.5, 3, 0, 0, 800, 0.25);
-
-        drawText(ctx, `ข้อมูล ณ เวลา ${formattedTime} น.`, 221, 609,19.30, 'SukhumvitSetMedium', '#c2cacd','left', 1.5, 3, 0, 0, 800, 0.25);
-
-        drawText(ctx, `${money02}`, 295.5, 440,42, 'SukhumvitSetMedium', '#ffffff', 'center', 40, 3, 0, 0, 430,-0.25);
-
-
-        if (qrCodeImage) {
-            ctx.drawImage(qrCodeImage, 0, 130.3, 555, 951);
-        }
-
-        drawBattery(ctx, batteryLevel, powerSavingMode);
-    };
-}
-
+    if (qrCodeImage) {
+        ctx.drawImage(qrCodeImage, 0, 130.3, 555, 951);
+    }
+    drawBattery(ctx, batteryLevel, powerSavingMode);
+};
 
 function drawText(ctx, text, x, y, fontSize, fontFamily, color, align, lineHeight, maxLines, shadowColor, shadowBlur, maxWidth, letterSpacing) {
     ctx.font = `${fontSize}px ${fontFamily}`;
     ctx.fillStyle = color;
     ctx.textAlign = 'left';
-    ctx.shadowColor = shadowColor;
-    ctx.shadowBlur = shadowBlur;
+    ctx.shadowColor = shadowColor || 'transparent';
+    ctx.shadowBlur = shadowBlur || 0;
 
     const paragraphs = text.split('<br>');
     let currentY = y;
@@ -209,7 +215,6 @@ function drawText(ctx, text, x, y, fontSize, fontFamily, color, align, lineHeigh
     });
 }
 
-
 function drawTextLine(ctx, text, x, y, letterSpacing) {
     if (!letterSpacing) {
         ctx.fillText(text, x, y);
@@ -239,58 +244,54 @@ function drawBattery(ctx, batteryLevel, powerSavingMode) {
         batteryColor = '#fccd0e'; 
     }
 
-const fillWidth = (batteryLevel / 100) * 26; 
-const x = 523;
-const y = 20.0;
-const height = 12.8;
-const radius = 3; // 
+    const fillWidth = (batteryLevel / 100) * 26; 
+    const x = 523;
+    const y = 20.0;
+    const height = 12.8;
+    const radius = 3; 
 
-ctx.fillStyle = batteryColor; 
+    ctx.fillStyle = batteryColor; 
 
-
-ctx.beginPath(); 
-ctx.moveTo(x, y + radius); 
-ctx.lineTo(x, y + height - radius); 
-ctx.arcTo(x, y + height, x + radius, y + height, radius); 
-ctx.lineTo(x + fillWidth - radius, y + height); 
-ctx.arcTo(x + fillWidth, y + height, x + fillWidth, y + height - radius, radius); 
-ctx.lineTo(x + fillWidth, y + radius); 
-ctx.arcTo(x + fillWidth, y, x + fillWidth - radius, y, radius); 
-ctx.lineTo(x + radius, y); 
-ctx.arcTo(x, y, x, y + radius, radius); 
-ctx.closePath(); 
-ctx.fill(); 
-
-
+    ctx.beginPath(); 
+    ctx.moveTo(x, y + radius); 
+    ctx.lineTo(x, y + height - radius); 
+    ctx.arcTo(x, y + height, x + radius, y + height, radius); 
+    ctx.lineTo(x + fillWidth - radius, y + height); 
+    ctx.arcTo(x + fillWidth, y + height, x + fillWidth, y + height - radius, radius); 
+    ctx.lineTo(x + fillWidth, y + radius); 
+    ctx.arcTo(x + fillWidth, y, x + fillWidth - radius, y, radius); 
+    ctx.lineTo(x + radius, y); 
+    ctx.arcTo(x, y, x, y + radius, radius); 
+    ctx.closePath(); 
+    ctx.fill(); 
 
     drawText(ctx, `${batteryLevel}`, x + 26 / 2, y + height / 1.21, 13, 'SFThonburiSemiBold', '#ffffff', 'center', 1, 1, 0, 0, 100, -1);
 }
 
-
-
-
-
-
-function togglePowerSavingMode() {
+window.togglePowerSavingMode = function() {
     powerSavingMode = !powerSavingMode;
     const powerSavingButton = document.getElementById('powerSavingMode');
-    powerSavingButton.classList.toggle('active', powerSavingMode);
-    updateDisplay();
-}
-function updateBatteryDisplay() {
-    const batteryLevel = document.getElementById('battery').value;
-    document.getElementById('battery-level').innerText = batteryLevel;
+    if(powerSavingButton) powerSavingButton.classList.toggle('active', powerSavingMode);
+    if(typeof updateDisplay === 'function') updateDisplay();
 }
 
-function downloadImage() {
+window.updateBatteryUI = function() {
+    const batteryLevel = document.getElementById('battery').value;
+    const levelText = document.getElementById('battery-level');
+    if(levelText) levelText.innerText = batteryLevel;
+}
+
+window.downloadImage = function() {
     const canvas = document.getElementById('canvas');
+    if(!canvas) return;
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
-    link.download = 'canvas_image.png';
+    link.download = 'deposit_kbank_3.png';
     link.click();
 }
 
-document.getElementById('generate').addEventListener('click', updateDisplay);
+const generateBtn = document.getElementById('generate');
+if(generateBtn) generateBtn.addEventListener('click', updateDisplay);
 
 function drawImage(ctx, imageUrl, x, y, width, height) {
     const image = new Image();
