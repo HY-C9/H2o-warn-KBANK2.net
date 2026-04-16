@@ -115,11 +115,8 @@ function updateDisplay() {
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     
-    const backgroundSelect = document.getElementById('backgroundSelect');
-    const bgUrl = backgroundSelect ? backgroundSelect.value : 'assets/image/bs/backgroundEnter-K3.png';
-    
     const backgroundImage = new Image();
-    backgroundImage.src = bgUrl;
+    backgroundImage.src = 'assets/image/bs/backgroundEnter-K3.jpg';
     
     backgroundImage.onload = function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
